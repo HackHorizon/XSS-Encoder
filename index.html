@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="XSS Payload Testing Tool – Safely test and encode Cross-Site Scripting payloads in a controlled environment." />
+  <title>XSS Payload Encoder</title>
+  <link rel="icon" href="favicon.png" type="image/png" />
+  <style>
+    body {
+      background: #1e1e2f;
+      color: #f1f1f1;
+      font-family: 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      background: #2c2f3a;
+      border-radius: 10px;
+      padding: 25px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .logo-title-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+
+    .logo {
+      height: 40px;
+      margin-right: 15px;
+    }
+
+    h2 {
+      font-size: 2rem;
+      margin: 0;
+      color: #f1f1f1;
+    }
+
+    label {
+      display: block;
+      margin: 15px 0 5px;
+      font-weight: 600;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      background: #383c4a;
+      color: #f1f1f1;
+      font-size: 1rem;
+    }
+
+    .highlighted {
+      background: #1abc9c;
+      color: #000;
+    }
+
+    #sandbox {
+      border: 1px solid #f1f1f1;
+      width: 100%;
+      height: 200px;
+      border-radius: 6px;
+      background: #383c4a;
+    }
+
+    .log {
+      margin-top: 15px;
+      background: #1f2233;
+      padding: 10px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border-radius: 6px;
+      min-height: 100px;
+      font-family: monospace;
+    }
+
+    .button-container {
+      text-align: center;
+    }
+
+    button {
+      padding: 8px 20px;
+      margin: 5px;
+      background-color: #1abc9c;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+      min-width: 120px;
+    }
+
+    button:hover {
+      background-color: #16a085;
+    }
+
+    button.red {
+      background-color: #e74c3c;
+    }
+
+    button.red:hover {
+      background-color: #c0392b;
+    }
+
+    .tooltip-icon {
+      cursor: help;
+      margin-left: 6px;
+      color: #4fc3f7;
+      font-size: 1rem;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <div class="logo-title-container">
+      <a href="https://iithack.com" target="_blank">
+        <img src="logo.png" alt="IIT Hack Logo" class="logo">
+      </a>
+      <h2>XSS Payload Encoder</h2>
+    </div>
+
+    <label for="payload">Enter Payload:</label>
+    <textarea id="payload" rows="5" placeholder="Enter your XSS payload here..."></textarea>
+
+    <div class="button-container">
+      <button onclick="encodePayload('url')">Encode as URL</button>
+      <button onclick="encodePayload('html')">Encode as HTML</button>
+      <button onclick="encodePayload('base64')">Encode as Base64</button>
+      <button onclick="encodePayload('double')">Double Encode</button>
+      <button onclick="encodePayload('obfuscate')">Obfuscate Payload</button>
+      <button onclick="encodePayload('jsuri')">JS URI Encoding</button>
+      <button onclick="encodePayload('hex')">Hex Encoding</button>
+    </div>
+
+    <div class="button-container">
+      <button class="red" onclick="renderPayload()">Render Payload</button>
+    </div>
+
+    <label for="sandbox">Sandbox:</label>
+    <iframe id="sandbox" sandbox="allow-scripts allow-same-origin"></iframe>
+
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    const payloadInput = document.getElementById("payload");
+    const sandbox = document.getElementById("sandbox");
+    const log = document.getElementById("log");
+
+    function renderPayload() {
+      const content = payloadInput.value;
+      const blob = new Blob([content], { type: 'text/html' });
+      sandbox.src = URL.createObjectURL(blob);
+      logMessage("✅ Payload rendered safely in sandbox.");
+    }
+
+    function encodePayload(type) {
+      const input = document.getElementById("payload").value;
+      let output = "";
+
+      switch (type) {
+        case 'url':
+          output = encodeURIComponent(input);
+          break;
+        case 'html':
+          output = input
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+          break;
+        case 'base64':
+          output = btoa(input);
+          break;
+        case 'double':
+          output = encodeURIComponent(encodeURIComponent(input));
+          break;
+        case 'obfuscate':
+          output = `/* Obfuscated */ eval(String.fromCharCode(97,108,101,114,116))('XSS')`;
+          break;
+        case 'jsuri':
+          output = `javascript:alert('${input}')`;
+          break;
+        case 'hex':
+          output = input.split('').map(c => `\\x${c.charCodeAt(0).toString(16)}`).join('');
+          break;
+        default:
+          output = input;
+      }
+
+      document.getElementById("payload").value = output;
+      logMessage(`📦 Encoded payload as ${type.toUpperCase()}`);
+    }
+
+    function logMessage(message) {
+      const now = new Date().toLocaleTimeString();
+      log.innerHTML += `[${now}] ${message}\n`;
+      log.scrollTop = log.scrollHeight;
+    }
+  </script>
+
+</body>
+
+</html>
